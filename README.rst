@@ -66,7 +66,7 @@ section may be incomplete and subject to changes.
     # libuv >= 1.10.0 (libuv1-dev)
     # openssl >= 1.1.0 (libssl-dev)
     #
-    # on Ubuntu: sudo apt-get install libssl-dev libuv1-dev cmake make
+    # on Ubuntu: sudo apt-get install libssl-dev libuv1-dev cmake make build-essential autoconf automake libtool
 
     cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED=ON -DHOTSTUFF_PROTO_LOG=ON
     make

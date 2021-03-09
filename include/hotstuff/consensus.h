@@ -34,7 +34,8 @@ struct Vote;
 struct Finality;
 
 /** Abstraction for HotStuff protocol state machine (without network implementation). */
-class HotStuffCore {
+class 
+HotStuffCore {
     block_t b0;                                  /** the genesis block */
     /* === state variables === */
     /** block containing the QC for the highest block having one */
@@ -42,33 +43,33 @@ class HotStuffCore {
     block_t b_lock;                            /**< locked block */
     block_t b_exec;                            /**< last executed block */
     uint32_t vheight;          /**< height of the block last voted for */
-    /* === auxilliary variables === */
+    /* === auxilliary variables === */ // 辅助变量
     privkey_bt priv_key;            /**< private key for signing votes */
     std::set<block_t> tails;   /**< set of tail blocks */
     ReplicaConfig config;                   /**< replica configuration */
-    /* === async event queues === */
+    /* === async event queues === */ // 异步事件队列
     std::unordered_map<block_t, promise_t> qc_waiting;
     promise_t propose_waiting;
     promise_t receive_proposal_waiting;
     promise_t hqc_update_waiting;
-    /* == feature switches == */
-    /** always vote negatively, useful for some PaceMakers */
+    /* == feature switches == */ // 功能开关
+    /** always vote negatively, useful for some PaceMakers */ // 始终否定投票，对某些PaceMakers有用
     bool vote_disabled;
 
-    block_t get_delivered_blk(const uint256_t &blk_hash);
-    void sanity_check_delivered(const block_t &blk);
-    void update(const block_t &nblk);
-    void update_hqc(const block_t &_hqc, const quorum_cert_bt &qc);
-    void on_hqc_update();
-    void on_qc_finish(const block_t &blk);
-    void on_propose_(const Proposal &prop);
-    void on_receive_proposal_(const Proposal &prop);
+    block_t get_delivered_blk(const uint256_t &blk_hash);   // 获取已发表的block
+    void sanity_check_delivered(const block_t &blk);        // 检查block
+    void update(const block_t &nblk);                       // !! Algorithm4.4 收到leader的提以后跟新本地状态
+    void update_hqc(const block_t &_hqc, const quorum_cert_bt &qc); // !! Algorithm5.2 新leader收到QC后更新本地状态
+    void on_hqc_update();                                   // 上一个函数被调用时，会调用该函数：更新 hqc_update_waiting
+    void on_qc_finish(const block_t &blk);                  // 当前轮QC结束
+    void on_propose_(const Proposal &prop);                 // 当前轮 提议
+    void on_receive_proposal_(const Proposal &prop);        // 当前轮 收到提议
 
     protected:
     ReplicaID id;                  /**< identity of the replica itself */
 
     public:
-    BoxObj<EntityStorage> storage;
+    BoxObj<EntityStorage> storage; // blk_cache 以及 cmd_cache
 
     HotStuffCore(ReplicaID id, privkey_bt &&priv_key);
     virtual ~HotStuffCore() {
@@ -89,19 +90,20 @@ class HotStuffCore {
      * always ensure this invariant. The invalid blocks will be dropped by this
      * function.
      * @return true if valid */
-    bool on_deliver_blk(const block_t &blk);
+    bool on_deliver_blk(const block_t &blk); // 调用以通知状态机，块已准备好被处理。
 
     /** Call upon the delivery of a proposal message.
      * The block mentioned in the message should be already delivered. */
-    void on_receive_proposal(const Proposal &prop);
+    void on_receive_proposal(const Proposal &prop); // 收到提议，并投票
 
     /** Call upon the delivery of a vote message.
      * The block mentioned in the message should be already delivered. */
-    void on_receive_vote(const Vote &vote);
+    void on_receive_vote(const Vote &vote); // 收到投票，当票数大于n-f，聚合签名，切换到下一轮
 
     /** Call to submit new commands to be decided (executed). "Parents" must
      * contain at least one block, and the first block is the actual parent,
-     * while the others are uncles/aunts */
+     * while the others are uncles/aunts 
+     * 发起一个包含新命令的提议*/
     block_t on_propose(const std::vector<uint256_t> &cmds,
                     const std::vector<block_t> &parents,
                     bytearray_t &&extra = bytearray_t());
@@ -133,7 +135,7 @@ class HotStuffCore {
     /** Create a partial certificate from its seralized form. */
     virtual part_cert_bt parse_part_cert(DataStream &s) = 0;
     /** Create a quorum certificate that proves 2f+1 votes for a block. */
-    virtual quorum_cert_bt create_quorum_cert(const uint256_t &blk_hash) = 0;
+    virtual quorum_cert_bt create_quorum_cert(const uint256_t &blk_hash) = 0; // 没有实现
     /** Create a quorum certificate from its serialized form. */
     virtual quorum_cert_bt parse_quorum_cert(DataStream &s) = 0;
     /** Create a command object from its serialized form. */
@@ -144,18 +146,19 @@ class HotStuffCore {
      * before running HotStuffCore protocol. */
     void add_replica(ReplicaID rid, const PeerId &peer_id, pubkey_bt &&pub_key);
     /** Try to prune blocks lower than last committed height - staleness. */
-    void prune(uint32_t staleness);
+    void prune(uint32_t staleness); // 尝试修剪低于上次提交的高度的块-陈旧。
 
     /* PaceMaker can use these functions to monitor the core protocol state
-     * transition */
+     * transition
+     * PaceMaker可以使用这些功能来监视核心协议状态转换 */ 
     /** Get a promise resolved when the block gets a QC. */
-    promise_t async_qc_finish(const block_t &blk);
+    promise_t async_qc_finish(const block_t &blk); // 当QC完成
     /** Get a promise resolved when a new block is proposed. */
-    promise_t async_wait_proposal();
+    promise_t async_wait_proposal(); // 当新块提议完成
     /** Get a promise resolved when a new proposal is received. */
-    promise_t async_wait_receive_proposal();
+    promise_t async_wait_receive_proposal(); // 当新的提议收到
     /** Get a promise resolved when hqc is updated. */
-    promise_t async_hqc_update();
+    promise_t async_hqc_update(); // 当hqc is updated
 
     /* Other useful functions */
     const block_t &get_genesis() const { return b0; }

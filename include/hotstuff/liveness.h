@@ -305,7 +305,7 @@ class PMRoundRobinProposer: virtual public PaceMaker {
     }
 
     void on_exp_timeout(TimerEvent &) {
-        if (proposer == hsc->get_id())
+        if (proposer == hsc->get_id()) // 如果自己是 leader 发起提议
             do_new_consensus(0, std::vector<uint256_t>{});
         timer = TimerEvent(ec, [this](TimerEvent &){ rotate(); });
         timer.add(prop_delay);

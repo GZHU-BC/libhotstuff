@@ -73,7 +73,8 @@ class HotStuffApp: public HotStuff {
     EventContext resp_ec;
     /** Network messaging between a replica and its client. */
     ClientNetwork<opcode_t> cn;
-    /** Timer object to schedule a periodic printing of system statistics */
+    /** Timer object to schedule a periodic printing of system statistics 
+     * 计时器对象以计划定期打印系统统计信息, 打点*/
     TimerEvent ev_stat_timer;
     /** Timer object to monitor the progress for simple impeachment */
     TimerEvent impeach_timer;
@@ -329,7 +330,7 @@ HotStuffApp::HotStuffApp(uint32_t blk_size,
         return false;
     });
 
-    /* register the handlers for msg from clients */
+    /* register the handlers for msg from clients 注册处理程序以接收来自客户端的消息 */
     cn.reg_handler(salticidae::generic_bind(&HotStuffApp::client_request_cmd_handler, this, _1, _2));
     cn.start();
     cn.listen(clisten_addr);
@@ -346,13 +347,13 @@ void HotStuffApp::client_request_cmd_handler(MsgReqCmd &&msg, const conn_t &conn
 }
 
 void HotStuffApp::start(const std::vector<std::tuple<NetAddr, bytearray_t, bytearray_t>> &reps) {
-    ev_stat_timer = TimerEvent(ec, [this](TimerEvent &) {
+    ev_stat_timer = TimerEvent(ec, [this](TimerEvent &) { // 定义callback
         HotStuff::print_stat();
         HotStuffApp::print_stat();
         //HotStuffCore::prune(100);
         ev_stat_timer.add(stat_period);
     });
-    ev_stat_timer.add(stat_period);
+    ev_stat_timer.add(stat_period); // 发起一个事件，开始事件循环
     impeach_timer = TimerEvent(ec, [this](TimerEvent &) {
         if (get_decision_waiting().size())
             get_pace_maker()->impeach();
@@ -372,9 +373,9 @@ void HotStuffApp::start(const std::vector<std::tuple<NetAddr, bytearray_t, bytea
             client_conns.erase(conn);
         return true;
     });
-    req_thread = std::thread([this]() { req_ec.dispatch(); });
-    resp_thread = std::thread([this]() { resp_ec.dispatch(); });
-    /* enter the event main loop */
+    req_thread = std::thread([this]() { req_ec.dispatch(); });   // 请求，event-loop进程
+    resp_thread = std::thread([this]() { resp_ec.dispatch(); }); // 回复，event-loop进程
+    /* enter the event main loop 进入事件主循环 */
     ec.dispatch();
 }
 
